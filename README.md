@@ -38,6 +38,6 @@ $ pnpm run start:prod
 
 ## Documentation 
 
-Documentation available in the following language:
+Documentation is available in the following language:
 - [Français](./docs/fr.md)
 - [English](./docs/en.md)
