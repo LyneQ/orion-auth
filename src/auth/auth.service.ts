@@ -141,7 +141,6 @@ export class AuthService {
       }
 
 
-      // Vérifiez si le token existe
       const tokenOwner = await this.prisma.tokens.findUnique({
         where: { accessToken },
       });
@@ -150,12 +149,10 @@ export class AuthService {
         throw new BadRequestException('Access token introuvable ou déjà invalide');
       }
 
-      // Supprimez le token
       await this.prisma.tokens.delete({
         where: { accessToken },
       });
 
-      // Réponse succès
       return { message: 'Déconnexion réussie' };
   }
 
