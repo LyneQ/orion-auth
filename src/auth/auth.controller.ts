@@ -34,8 +34,8 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  logout(@Body() body: { refreshToken: string }) {
-    return this.authService.logout(body.refreshToken);
+  logout(@Body() body: { accessToken: string }) {
+    return this.authService.logout(body.accessToken);
   }
 
 

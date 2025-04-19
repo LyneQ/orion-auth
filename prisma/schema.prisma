@@ -3,25 +3,26 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" // ou "mysql", "postgres", etc
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  username      String         @unique
-  password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
+model Users {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tokens    Tokens[]
 }
 
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  expiresAt DateTime
+model Tokens {
+  id           String   @id @default(uuid())
+  refreshToken String   @unique
+  accessToken  String   @unique
+  userId       String
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  user         Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -17,7 +17,7 @@ export class AuthService {
   ) {}
 
   async register(email: string, username: string, password: string) {
-    const existingUser = await this.prisma.user.findFirst({
+    const existingUser = await this.prisma.users.findFirst({
       where: { OR: [{ email }, { username }] },
     });
 
@@ -27,7 +27,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await this.prisma.user.create({
+    const user = await this.prisma.users.create({
       data: {
         email,
         username,
@@ -45,7 +45,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.users.findUnique({ where: { email } });
 
     if (!user) {
       throw new UnauthorizedException('Email ou mot de passe invalide');
@@ -57,7 +57,7 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
-    const isAlreadyLoggedIn = await this.prisma.refreshToken.findFirst({
+    const isAlreadyLoggedIn = await this.prisma.tokens.findFirst({
       where: { userId: user.id },
     })
 
@@ -66,26 +66,29 @@ export class AuthService {
     }
 
     // Supprimer tous les anciens refresh tokens avant d'en générer un nouveau
-    await this.prisma.refreshToken.deleteMany({
+    await this.prisma.tokens.deleteMany({
       where: { userId: user.id },
     });
+
+    // Créer un nouveau access token
+    const payload = { sub: user.id, email: user.email };
+    const accessToken = await this.jwt.signAsync(payload);
 
     // Créer un nouveau refresh token
     const refreshToken = uuidv4();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.prisma.refreshToken.create({
+    await this.prisma.tokens.create({
       data: {
-        token: refreshToken,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         userId: user.id,
         expiresAt: expiresAt,
       },
     });
 
-    const payload = { sub: user.id, email: user.email };
 
-    const accessToken = await this.jwt.signAsync(payload);
 
     return {
       accessToken,
@@ -100,15 +103,15 @@ export class AuthService {
 
   async refreshAccessToken(refreshToken: string) {
 
-    const token = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+    const token = await this.prisma.tokens.findUnique({
+      where: { refreshToken: refreshToken },
     });
 
     if (!token || token.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token invalide ou expiré');
     }
 
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.users.findUnique({
       where: { id: token.userId },
     });
 
@@ -121,18 +124,39 @@ export class AuthService {
       email: user.email,
     });
 
+    await this.prisma.tokens.update({
+      where: { id: token.id },
+      data: {
+        accessToken: newAccessToken,
+      },
+    })
+
     return { accessToken: newAccessToken };
   }
 
-  async logout(refreshToken: string) {
-    const deletedToken = await this.prisma.refreshToken.deleteMany({
-      where: { token: refreshToken },
-    });
+  async logout(accessToken: string) {
 
-    if (deletedToken.count === 0) {
-      throw new BadRequestException('Refresh token invalide') 
-    }
+      if (!accessToken) {
+        throw new BadRequestException('Access token manquant ou invalide');
+      }
 
-    return { message: 'Déconnexion réussie' };
+
+      // Vérifiez si le token existe
+      const tokenOwner = await this.prisma.tokens.findUnique({
+        where: { accessToken },
+      });
+
+      if (!tokenOwner) {
+        throw new BadRequestException('Access token introuvable ou déjà invalide');
+      }
+
+      // Supprimez le token
+      await this.prisma.tokens.delete({
+        where: { accessToken },
+      });
+
+      // Réponse succès
+      return { message: 'Déconnexion réussie' };
   }
+
 }
