@@ -9,9 +9,11 @@ logout features.
 
 ### Environment Variables:
 
+- `PORT`: configure witch port nest will use (optional: 3000 by default)
 - `DATABASE_URL`: Database connection URL
 - `JWT_SECRET`: Secret key for JWT token generation
 - `JWT_EXPIRES_IN`: JWT tokens validity duration (e.g.: "1h")
+- `CSRF_SECRET`: used as auth (x-csrf-token in the header) for the route /csrf-token
 
 ## Data Models
 
@@ -34,6 +36,16 @@ logout features.
 
 ## Endpoints
 
+### Initialisation
+
+- **GET** `/csrf-token`
+- **Request body**:
+  ```json
+  { 
+    "x-csrf-token": "csrf-token secret available in .env fle (optional)"
+  }
+   ```
+
 ### Register
 
 - **POST** `/auth/register`
@@ -42,7 +54,8 @@ logout features.
   {
     "email": "user@example.com",
     "username": "user",
-    "password": "password"
+    "password": "password",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Response**: Created user data
@@ -54,7 +67,8 @@ logout features.
   ```json
   {
     "email": "user@example.com",
-    "password": "password"
+    "password": "password",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Response**: Access token, refresh token and user data
@@ -65,7 +79,8 @@ logout features.
 - **Request body**:
   ```json
   {
-    "refreshToken": "your-refresh-token"
+    "refreshToken": "your-refresh-token",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Response**: New access token
@@ -76,7 +91,8 @@ logout features.
 - **Request body**:
   ```json
   {
-    "refreshToken": "your-refresh-token"
+    "refreshToken": "your-refresh-token",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Response**: Confirmation message
@@ -88,3 +104,4 @@ logout features.
 - Invalid/expired token: 401 Unauthorized
 - User already logged in: 409 Conflict
 - Invalid request: 400 Bad Request
+- Unauthorized access: 403 Forbidden

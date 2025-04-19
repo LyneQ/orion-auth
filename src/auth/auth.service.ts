@@ -3,7 +3,7 @@ import {
   UnauthorizedException,
   ConflictException, BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
@@ -100,7 +100,6 @@ export class AuthService {
 
   async refreshAccessToken(refreshToken: string) {
 
-    console.log(refreshToken);
     const token = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
     });
@@ -130,7 +129,6 @@ export class AuthService {
       where: { token: refreshToken },
     });
 
-    console.log(deletedToken);
     if (deletedToken.count === 0) {
       throw new BadRequestException('Refresh token invalide') 
     }

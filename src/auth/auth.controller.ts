@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -14,6 +15,7 @@ export class AuthController {
     }
     return this.authService.register(body.email, body.username, body.password);
   }
+
   @Post('login')
   login(@Body() body: { email: string; password: string }) {
     if (!body || !body.email || !body.password) {

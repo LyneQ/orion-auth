@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { AppModule } from '../src/app.module';
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -16,10 +15,48 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('Throttling behavior', () => {
+    it('should allow requests under the limit', async () => {
+      const server = app.getHttpServer();
+
+      // First request
+      await request(server)
+        .get('/')
+        .expect(200)
+        .expect('Hello World!');
+
+      // Second request
+      await request(server)
+        .get('/')
+        .expect(200)
+        .expect('Hello World!');
+    });
+
+    it('should block requests exceeding the limit', async () => {
+      const server = app.getHttpServer();
+
+      // Simulate hitting the rate limit
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+      await request(server).get('/').expect(200);
+
+
+      // The rate limit should now be exceeded
+      const response = await request(server).get('/');
+      expect(response.status).toBe(429);
+      expect(response.body).toMatchObject({
+        statusCode: 429,
+        message: 'ThrottlerException: Too Many Requests',
+      });
+    });
   });
 });

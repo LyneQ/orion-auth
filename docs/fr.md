@@ -9,9 +9,11 @@ déconnexion.
 
 ### Variables d'environnement:
 
+- `PORT`: configure le port utilisé par Nest (optionnel: 3000 par défaut)
 - `DATABASE_URL`: URL de connexion à la base de données
-- `JWT_SECRET`: Clé secrète pour la génération des JWT tokens
-- `JWT_EXPIRES_IN`: Durée de validité des JWT tokens (ex: "1h")
+- `JWT_SECRET`: Clé secrète pour la génération des tokens JWT
+- `JWT_EXPIRES_IN`: Durée de validité des tokens JWT (ex: "1h")
+- `CSRF_SECRET`: utilisé comme authentification (x-csrf-token dans le header) pour la route /csrf-token
 
 ## Modèles de Données
 
@@ -34,6 +36,16 @@ déconnexion.
 
 ## Points d'Accès (Endpoints)
 
+### Initialisation 
+
+- **GET** `/csrf-token`
+- **Corps de la requête**:
+  ```json
+  { 
+    "x-csrf-token": "csrf-token secret configuré dans le .env (optionnel)"
+  }
+   ```
+
 ### Inscription
 
 - **POST** `/auth/register`
@@ -42,7 +54,8 @@ déconnexion.
   {
     "email": "utilisateur@exemple.com",
     "username": "utilisateur",
-    "password": "motdepasse"
+    "password": "motdepasse",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Réponse**: Données de l'utilisateur créé
@@ -54,7 +67,8 @@ déconnexion.
   ```json
   {
     "email": "utilisateur@exemple.com",
-    "password": "motdepasse"
+    "password": "motdepasse",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Réponse**: Access token, refresh token et données utilisateur
@@ -65,7 +79,8 @@ déconnexion.
 - **Corps de la requête**:
   ```json
   {
-    "refreshToken": "votre-refresh-token"
+    "refreshToken": "votre-refresh-token",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Réponse**: Nouveau access token
@@ -76,7 +91,8 @@ déconnexion.
 - **Corps de la requête**:
   ```json
   {
-    "refreshToken": "votre-refresh-token"
+    "refreshToken": "votre-refresh-token",
+    "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Réponse**: Message de confirmation
@@ -88,3 +104,4 @@ déconnexion.
 - Token invalide/expiré: 401 Unauthorized
 - Utilisateur déjà connecté: 409 Conflict
 - Requête invalide: 400 Bad Request
+- access non autorisé: 403 Forbidden
