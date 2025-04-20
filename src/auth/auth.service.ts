@@ -1,7 +1,7 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException, BadRequestException,
+  ConflictException, BadRequestException, NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
@@ -9,21 +9,23 @@ import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
-  ) {}
+  ) {
+  }
 
-  async register(email: string, username: string, password: string, bio: string, firstName: string, lastName: string, avatarUrl: string ) {
+  async register(email: string, username: string, password: string, bio: string, firstName: string, lastName: string, avatarUrl: string) {
     const existingUser = await this.prisma.users.findFirst({
       where: { OR: [{ email }, { username }] },
     });
 
     if (existingUser) {
-      if ( avatarUrl ) await unlink(join('__dirname', '..', 'uploads', avatarUrl.split('/').pop() || ''));
+      if (avatarUrl) await unlink(join('__dirname', '..', 'uploads', avatarUrl.split('/').pop() || ''));
       throw new ConflictException('Email ou pseudo déjà utilisé.');
     }
 
@@ -36,7 +38,7 @@ export class AuthService {
         password: hashedPassword,
         firstName: firstName,
         lastName: lastName,
-        profilePicture: avatarUrl || null,
+        profilePicture: avatarUrl ? join( 'static', avatarUrl) : null,
         bio: bio || null,
       },
       select: {
@@ -72,7 +74,7 @@ export class AuthService {
 
     const isAlreadyLoggedIn = await this.prisma.sessions.findFirst({
       where: { userId: user.id },
-    })
+    });
 
     if (isAlreadyLoggedIn) {
       throw new ConflictException('Utilisateur déjà connecté');
@@ -100,7 +102,6 @@ export class AuthService {
         expiresAt: expiresAt,
       },
     });
-
 
 
     return {
@@ -142,30 +143,67 @@ export class AuthService {
       data: {
         accessToken: newAccessToken,
       },
-    })
+    });
 
     return { accessToken: newAccessToken };
   }
 
   async logout(accessToken: string) {
 
-      if (!accessToken) {
-        throw new BadRequestException('Access token manquant ou invalide');
+    if (!accessToken) {
+      throw new BadRequestException('Access token manquant ou invalide');
+    }
+
+    const tokenOwner = await this.prisma.sessions.findUnique({
+      where: { accessToken },
+    });
+
+    if (!tokenOwner) {
+      throw new BadRequestException('Access token introuvable ou déjà invalide');
+    }
+
+    await this.prisma.sessions.delete({
+      where: { accessToken },
+    });
+
+    return { message: 'Déconnexion réussie' };
+  }
+
+  async getAuthenticatedUser(accessToken: string) {
+    if (!accessToken) {
+      throw new BadRequestException('Access token manquant ou invalide');
+    }
+
+    const userId = await this.prisma.sessions.findUnique({
+      where: { accessToken },
+      select: { userId: true },
+    });
+
+    if (!userId) {
+      throw new NotFoundException('Access token manquant ou invalide');
+    }
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId!.userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        profilePicture: true,
+        bio: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
       }
+    });
 
-      const tokenOwner = await this.prisma.sessions.findUnique({
-        where: { accessToken },
-      });
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
 
-      if (!tokenOwner) {
-        throw new BadRequestException('Access token introuvable ou déjà invalide');
-      }
-
-      await this.prisma.sessions.delete({
-        where: { accessToken },
-      });
-
-      return { message: 'Déconnexion réussie' };
+    return user;
   }
 
 }

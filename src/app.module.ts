@@ -5,6 +5,8 @@ import { AuthModule } from './auth/auth.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { UploadModule } from './upload/upload.module';
+import { join } from 'path';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -18,6 +20,11 @@ import { UploadModule } from './upload/upload.module';
         },
       ],
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/static/',
+    }),
+
   ],
   controllers: [AppController],
   providers: [

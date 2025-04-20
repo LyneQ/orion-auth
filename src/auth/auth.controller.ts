@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterModule } from '@nestjs/platform-express';
@@ -7,7 +7,8 @@ import { extname } from 'path';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+  }
 
   @Post('register')
   @UseInterceptors(FileInterceptor('avatarUrl', {
@@ -23,7 +24,14 @@ export class AuthController {
   }))
   async register(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { email: string; username: string; password: string, bio: string, firstName: string, lastName: string },
+    @Body() body: {
+      email: string;
+      username: string;
+      password: string,
+      bio: string,
+      firstName: string,
+      lastName: string
+    },
   ) {
 
     if (!body || !body.email || !body.username || !body.password || !body.firstName || !body.lastName) {
@@ -57,6 +65,9 @@ export class AuthController {
     return this.authService.logout(body.accessToken);
   }
 
-
+  @Get('me')
+  getAuthenticatedUser(@Body() body: { accessToken: string }) {
+    return this.authService.getAuthenticatedUser(body.accessToken);
+  }
 
 }
