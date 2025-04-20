@@ -93,7 +93,6 @@ export class UserService {
     if (avatarFileName) {
       fs.unlinkSync(`./uploads/${avatarFileName}`);
     }
-    
 
     await this.prisma.users.delete({ where: { id: userId } });
 
