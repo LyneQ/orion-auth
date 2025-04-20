@@ -7,7 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
-import * as process from 'node:process';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
 
 @Injectable()
 export class AuthService {
@@ -16,12 +17,13 @@ export class AuthService {
     private jwt: JwtService,
   ) {}
 
-  async register(email: string, username: string, password: string) {
+  async register(email: string, username: string, password: string, bio: string, firstName: string, lastName: string, avatarUrl: string ) {
     const existingUser = await this.prisma.users.findFirst({
       where: { OR: [{ email }, { username }] },
     });
 
     if (existingUser) {
+      if ( avatarUrl ) await unlink(join('__dirname', '..', 'uploads', avatarUrl.split('/').pop() || ''));
       throw new ConflictException('Email ou pseudo déjà utilisé.');
     }
 
@@ -32,12 +34,23 @@ export class AuthService {
         email,
         username,
         password: hashedPassword,
+        firstName: firstName,
+        lastName: lastName,
+        profilePicture: avatarUrl || null,
+        bio: bio || null,
       },
       select: {
         id: true,
         email: true,
         username: true,
+        firstName: true,
+        lastName: true,
+        profilePicture: true,
+        bio: true,
+        role: true,
+        isActive: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -57,7 +70,7 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
-    const isAlreadyLoggedIn = await this.prisma.tokens.findFirst({
+    const isAlreadyLoggedIn = await this.prisma.sessions.findFirst({
       where: { userId: user.id },
     })
 
@@ -65,8 +78,8 @@ export class AuthService {
       throw new ConflictException('Utilisateur déjà connecté');
     }
 
-    // Supprimer tous les anciens refresh tokens avant d'en générer un nouveau
-    await this.prisma.tokens.deleteMany({
+    // Supprimer tous les anciens refresh sessions avant d'en générer un nouveau
+    await this.prisma.sessions.deleteMany({
       where: { userId: user.id },
     });
 
@@ -79,7 +92,7 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.prisma.tokens.create({
+    await this.prisma.sessions.create({
       data: {
         accessToken: accessToken,
         refreshToken: refreshToken,
@@ -103,7 +116,7 @@ export class AuthService {
 
   async refreshAccessToken(refreshToken: string) {
 
-    const token = await this.prisma.tokens.findUnique({
+    const token = await this.prisma.sessions.findUnique({
       where: { refreshToken: refreshToken },
     });
 
@@ -124,7 +137,7 @@ export class AuthService {
       email: user.email,
     });
 
-    await this.prisma.tokens.update({
+    await this.prisma.sessions.update({
       where: { id: token.id },
       data: {
         accessToken: newAccessToken,
@@ -140,8 +153,7 @@ export class AuthService {
         throw new BadRequestException('Access token manquant ou invalide');
       }
 
-
-      const tokenOwner = await this.prisma.tokens.findUnique({
+      const tokenOwner = await this.prisma.sessions.findUnique({
         where: { accessToken },
       });
 
@@ -149,7 +161,7 @@ export class AuthService {
         throw new BadRequestException('Access token introuvable ou déjà invalide');
       }
 
-      await this.prisma.tokens.delete({
+      await this.prisma.sessions.delete({
         where: { accessToken },
       });
 
