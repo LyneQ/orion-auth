@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { UploadModule } from './upload/upload.module';
 import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/static/',
     }),
+    UserModule,
 
   ],
   controllers: [AppController],

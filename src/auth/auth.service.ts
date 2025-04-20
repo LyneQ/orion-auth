@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { NotFoundError } from 'rxjs';
+import * as process from 'node:process';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,16 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
   ) {
+  }
+
+  private readonly JWT_SECRET = process.env.JWT_SECRET;
+
+  verifyToken(token: string) {
+    try {
+      return this.jwt.verify(token);
+    } catch (err) {
+      throw new UnauthorizedException('Token invalide ou expiré');
+    }
   }
 
   async register(email: string, username: string, password: string, bio: string, firstName: string, lastName: string, avatarUrl: string) {

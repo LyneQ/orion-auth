@@ -39,23 +39,27 @@ logout features.
 ### Initialisation
 
 - **GET** `/csrf-token`
+- **Headers**:
+  - `authorization`: Bearer token
 - **Request body**:
   ```json
   { 
-    "x-csrf-token": "csrf-token secret available in .env fle (optional)"
+    "x-csrf-token": "csrf-token secret available in .env file"
   }
    ```
 
 ### Register
 
 - **POST** `/auth/register`
+- **Headers**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
 - **Request body**:
   ```json
   {
     "email": "user@example.com",
     "username": "user",
-    "password": "password",
-    "x-csrf-token": "unique csrf-token"
+    "password": "password"
   }
   ```
 - **Response**: Created user data
@@ -63,12 +67,14 @@ logout features.
 ### Login
 
 - **POST** `/auth/login`
+- **Headers**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
 - **Request body**:
   ```json
   {
     "email": "user@example.com",
-    "password": "password",
-    "x-csrf-token": "unique csrf-token"
+    "password": "password"
   }
   ```
 - **Response**: Access token, refresh token and user data
@@ -76,11 +82,13 @@ logout features.
 ### Token Refresh
 
 - **POST** `/auth/refresh`
+- **Headers**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
 - **Request body**:
   ```json
   {
-    "refreshToken": "your-refresh-token",
-    "x-csrf-token": "unique csrf-token"
+    "refreshToken": "your-refresh-token"
   }
   ```
 - **Response**: New access token
@@ -88,14 +96,50 @@ logout features.
 ### Logout
 
 - **POST** `/auth/logout`
+- **Headers**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
 - **Request body**:
   ```json
   {
-    "refreshToken": "your-refresh-token",
-    "x-csrf-token": "unique csrf-token"
+    "refreshToken": "your-refresh-token"
   }
   ```
 - **Response**: Confirmation message
+
+### Get User
+
+- **GET** `/user/:id`
+- **Parameters**:
+  - `id`: User ID (UUID)
+- **Headers**:
+  - `authorization`: Bearer token
+- **Response**: User data
+
+### Update User
+
+- **PATCH** `/user/:id`
+- **Parameters**:
+  - `id`: User ID (UUID)
+- **Headers**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
+- **Request body**:
+  ```json
+  {
+    "username": "new username",
+    "email": "new.email@example.com",
+    "bio": "user bio",
+    "firstName": "first name",
+    "lastName": "last name"
+  }
+  ```
+- **Response**: Updated user data
+
+### Replace User
+
+- **PUT** `/user/`
+- **Response**: Replaced user data
 
 ## Error Handling
 

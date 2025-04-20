@@ -91,12 +91,49 @@ déconnexion.
 - **Corps de la requête**:
   ```json
   {
-    "refreshToken": "votre-refresh-token",
+    "refreshToken": "votre-access-token",
     "x-csrf-token": "unique csrf-token"
   }
   ```
 - **Réponse**: Message de confirmation
 
+### Obtenir un Utilisateur
+
+- **GET** `/user/:id`
+- **Paramètres**:
+  - `id`: Identifiant unique de l'utilisateur
+- **En-têtes**:
+  - `authorization`: Bearer token
+- **Réponse**: Données de l'utilisateur
+
+### Mettre à Jour un Utilisateur
+
+- **PATCH** `/user/:id`
+- **Paramètres**:
+  - `id`: Identifiant unique de l'utilisateur
+- **En-têtes**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
+- **Corps de la requête**:
+  ```json
+  {
+    "username": "nouveau_nom",
+    "email": "nouveau@email.com", 
+    "bio": "nouvelle bio",
+    "firstName": "nouveau prénom",
+    "lastName": "nouveau nom",
+    "x-csrf-token": "unique csrf-token"
+  }
+  ```
+- **Réponse**: Données de l'utilisateur mises à jour
+
+### Supprimer un Utilisateur
+
+- **DELETE** `/user/`
+- **En-têtes**:
+  - `authorization`: Bearer token
+  - `x-csrf-token`: CSRF token
+- **Réponse**: Message de confirmation
 ## Gestion des Erreurs
 
 - Utilisateur déjà existant: 409 Conflict
